@@ -1,441 +1,238 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>동물병원 시즌별 콘텐츠 달력 빌더</title>
-
-<script src="https://cdn.tailwindcss.com"></script>
-
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
-
-<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-<style>
-  body { font-family: 'Noto Sans KR', system-ui, -apple-system, sans-serif; margin: 0; }
-  .font-display { font-family: 'Space Grotesk', 'Noto Sans KR', sans-serif; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>동물병원 시즌별 콘텐츠 달력 빌더</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-<div id="root">
-  <div style="padding:40px;text-align:center;color:#94a3b8;font-family:sans-serif;">로딩 중...</div>
-</div>
+<body class="bg-slate-50 text-slate-800">
+  <div id="root"></div>
 
-<script id="boot-error-handler">
-  window.addEventListener("error", function (e) {
-    var rootEl = document.getElementById("root");
-    if (rootEl) {
-      rootEl.innerHTML =
-        '<div style="padding:32px;font-family:monospace;white-space:pre-wrap;color:#b91c1c;background:#fef2f2;">' +
-        '스크립트 로딩/실행 오류가 발생했어요:\n' + e.message +
-        '</div>';
-    }
-  });
-</script>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
 
-<script type="text/babel" data-presets="react">
-/* React.useState / React.useEffect 전역 객체를 그대로 사용 (import 문 없음) */
+    const MONTH_DATA = {
+      1: { season: "겨울", title: "새해 건강검진 & 한파 질환", issues: ["노령견 관절/심장 질환", "저체온증 및 동상", "동계 신년 건강검진"] },
+      2: { season: "겨울", title: "설 연휴 식이 중독 & 건조증", issues: ["명절 음식(전, 뼈) 섭취", "실내 건조 피부병", "자두/초콜릿 중독"] },
+      3: { season: "봄", title: "심장사상충 예방 & 봄 산책", issues: ["심장사상충 예방 시작", "봄철 외부기생충/진드기", "야외 활동 증가 후 외상"] },
+      4: { season: "봄", title: "꽃가루 알레르기 & 미세먼지", issues: ["봄철 안구/피부 알레르기", "미세먼지 호흡기 질환", "환절기 면역력 저하"] },
+      5: { season: "봄", title: "가정의 달 피크 산책 & 외상", issues: ["야외활동 증가 슬개골/관절", "풀밭 진드기 감염", "체중 관리 및 비만"] },
+      6: { season: "여름", title: "초여름 피부병 & 치과 케어", issues: ["습한 날씨 곰팡이성 피부염", "장마철 산책 후 습진", "스케일링 및 구강 관리"] },
+      7: { season: "여름", title: "폭염 열사병 & 물놀이 질환", issues: ["여름철 열사병 응급 대처", "물놀이 후 급성 외이도염", "여름 과일(자두씨/포도) 중독"] },
+      8: { season: "여름", title: "말복/막바지 무더위 & 식중독", issues: ["여름철 식중독/장염", "잔디밭 모기 매개 질환", "에어컨 냉방병/호흡기"] },
+      9: { season: "가을", title: "추석 식이 사고 & 환절기", issues: ["추석 명절 음식 음복 예방", "가을철 털갈이 및 알레르기", "환절기 감기/기침"] },
+      10: { season: "가을", title: "가을 산책 단풍철 & 가을진드기", issues: ["가을철 야생 진드기", "산책 시 밤/도토리 섭취", "노령견 음수량 관리"] },
+      11: { season: "가을", title: "초겨울 관절 통증 & 건조증", issues: ["기온 저하 노령견 관절 통증", "실내 난방 피부 건조", "예방접종 재접종 시즌"] },
+      12: { season: "겨울", title: "연말 주의사항 & 한파 대비", issues: ["연말 파티 음식 음복", "산책 로드쇼 염화칼슘 발바닥 상처", "겨울철 유선종양/검진"] }
+    };
 
-/* ------------------------------------------------------------------ */
-/* 1. 월별 시즌 이슈 기본 DB                                             */
-/* ------------------------------------------------------------------ */
-const SEASONS = {
-  spring: { label: "봄", color: "#4C9A6A", soft: "#E9F4EC", emoji: "🌱" },
-  summer: { label: "여름", color: "#E8632C", soft: "#FCEBE2", emoji: "☀️" },
-  autumn: { label: "가을", color: "#C88A2E", soft: "#F7EEDD", emoji: "🍂" },
-  winter: { label: "겨울", color: "#3E5C8A", soft: "#E9EDF4", emoji: "❄️" }
-};
+    function App() {
+      const [apiKey, setApiKey] = useState(() => localStorage.getItem("gemini_key") || "");
+      const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+      const [loading, setLoading] = useState(false);
+      const [result, setResult] = useState(null);
+      const [errorMsg, setErrorMsg] = useState("");
 
-const MONTH_DB = {
-  1: { season: "winter", issues: ["연말연시 과식·급체", "실내 활동 증가로 인한 스트레스", "건조한 실내 습도로 인한 피부 트러블"], diseases: ["급성 위장관염", "건성 피부염", "슬개골 탈구(빙판길 낙상)"], note: "새해를 맞아 '건강검진 패키지' 콘텐츠 반응이 좋은 시기예요." },
-  2: { season: "winter", issues: ["환절기 대비 면역 관리", "빙판길 낙상·관절 부상", "이사철 스트레스성 질환"], diseases: ["슬개골 탈구", "환절기 알레르기성 피부염", "스트레스성 방광염"], note: "3월 심장사상충 시즌 전, '예방접종 사전 예약' 유도가 효과적이에요." },
-  3: { season: "spring", issues: ["심장사상충 예방 시작", "봄철 진드기·알레르기", "야외 활동 증가"], diseases: ["심장사상충 감염증", "아토피성 피부염", "진드기 매개 질환"], note: "심장사상충 예방 시즌 시작 - '지금 시작해야 하는 이유' 콘텐츠가 핵심." },
-  4: { season: "spring", issues: ["심장사상충 예방 지속", "SFTS 등 진드기 매개 질환", "벚꽃놀이 나들이 안전"], diseases: ["진드기 매개 열성 질환(SFTS)", "슬개골 탈구", "결막염(꽃가루)"], note: "나들이 시즌 - 외출 동반 안전수칙 콘텐츠 수요가 높아요." },
-  5: { season: "spring", issues: ["가정의 달 반려동물 나들이", "초여름 열사병 초기 주의", "중성화 수술 시즌"], diseases: ["열사병 초기 증상", "잔디 알레르기성 피부염", "외이도염"], note: "가정의 달 이벤트와 '중성화 수술 상담' 연계 콘텐츠가 좋아요." },
-  6: { season: "summer", issues: ["장마철 습도 관리", "심장사상충 예방 중기 관리", "벼룩·진드기 활성기"], diseases: ["외이도염", "곰팡이성 피부병(말라세지아)", "심장사상충"], note: "장마철 '습도 관리 = 외이도염 예방' 프레이밍이 반응이 좋아요." },
-  7: { season: "summer", issues: ["여름철 열사병", "물놀이 후 외이도염", "여름 과일·초콜릿 등 식이 중독", "모기 매개 질환"], diseases: ["열사병", "급성 외이도염", "포도·자두씨·초콜릿 중독"], note: "폭염 특보 시즌 - '열사병 응급 대처법' 콘텐츠가 검색 유입에 강해요." },
-  8: { season: "summer", issues: ["폭염 피크 열사병", "냉방병·장염", "휴가철 펫호텔·이동장 스트레스", "벌레 물림"], diseases: ["열사병", "급성 장염", "곤충 자상 알레르기 반응"], note: "휴가철 '펫호텔 위생·건강검진' 결합 콘텐츠 수요가 높아요." },
-  9: { season: "autumn", issues: ["환절기 털갈이·피부 트러블", "태풍·장마 후 외이도염", "추석 음식 중독(포도, 양파)", "실외활동 재개"], diseases: ["환절기 피부염", "외이도염", "포도·양파 중독"], note: "추석 연휴 전 '위험한 명절 음식' 콘텐츠가 매년 반응이 좋아요." },
-  10: { season: "autumn", issues: ["단풍놀이 나들이철", "진드기 재활성", "알레르기성 비염"], diseases: ["진드기 매개 질환", "알레르기성 결막염·비염", "슬개골 탈구"], note: "나들이 시즌 마무리 - '겨울 대비 예방접종 체크' 유도 콘텐츠 추천." },
-  11: { season: "autumn", issues: ["노령견 실내 관절 통증", "건조 피부병", "겨울철 산책 주의사항"], diseases: ["퇴행성 관절염", "건성 피부염", "저체온증 초기"], note: "노령동물 보호자 타겟 '관절 관리' 콘텐츠 전환이 잘 나와요." },
-  12: { season: "winter", issues: ["연말 모임 음식 중독(초콜릿·케이크)", "크리스마스 장식품 삼킴사고", "한파 저체온증", "실내 난방 건조 피부"], diseases: ["초콜릿 중독", "이물 삼킴", "저체온증"], note: "연말 모임 시즌 - '삼킴 사고 응급 대처' 콘텐츠가 공유되기 좋아요." }
-};
+      const handleSaveKey = (e) => {
+        const val = e.target.value;
+        setApiKey(val);
+        localStorage.setItem("gemini_key", val);
+      };
 
-const MONTH_NAMES = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
+      const generateContent = async () => {
+        const cleanKey = apiKey.trim();
+        if (!cleanKey) {
+          alert("우측 상단에 Gemini API Key를 입력해주세요!");
+          return;
+        }
 
-/* ------------------------------------------------------------------ */
-/* 2. Gemini 프롬프트 빌더 + API 호출                                    */
-/* ------------------------------------------------------------------ */
-const SYSTEM_PROMPT = "너는 친절하고 전문적인 동물병원 마케터야.\n" +
-"선택된 월과 수의학적 시즌 이슈를 바탕으로 마케팅 콘텐츠 2종을 JSON 형식으로 작성해.\n\n" +
-"[규칙]\n" +
-"- 수의사법 제32조를 준수해 100% 완치, 지역 1위 등의 과대 표현은 절대 금지할 것.\n" +
-"- 블로그 제목: 클릭을 유발하면서도 보호자에게 안심을 주는 롱테일 키워드 중심 5개.\n" +
-"- 카드뉴스: (슬라이드 1~4장 개요 및 후킹 문구) 형태의 실무용 구상안 3개.\n\n" +
-"[JSON 출력 구조]\n" +
-"{\n" +
-'  "blogTitles": ["제목1", "제목2", "제목3", "제목4", "제목5"],\n' +
-'  "cardNews": ["카드뉴스1 요약", "카드뉴스2 요약", "카드뉴스3 요약"]\n' +
-"}";
+        setLoading(true);
+        setErrorMsg("");
+        const monthInfo = MONTH_DATA[selectedMonth];
 
-function buildUserPrompt(monthNum) {
-  const info = MONTH_DB[monthNum];
-  const seasonLabel = SEASONS[info.season].label;
-  const m = MONTH_NAMES[monthNum - 1];
-  return "[선택된 월] " + m + " (" + seasonLabel + ")\n" +
-    "[주요 시즌 이슈] " + info.issues.join(", ") + "\n" +
-    "[주의 질환] " + info.diseases.join(", ") + "\n" +
-    "[참고 메모] " + info.note + "\n\n" +
-    "위 정보를 바탕으로 지시된 JSON 구조로만 응답해줘. 다른 설명 문구는 붙이지 마.";
+        const promptText = `
+너는 동물병원 마케팅 전문가야. 
+${selectedMonth}월(${monthInfo.title})의 주요 이슈 [${monthInfo.issues.join(", ")}]를 바탕으로 마케팅 콘텐츠를 추천해줘.
+
+[작성 규칙]
+- 수의사법 제32조를 준수해 100% 완치, 지역 1위 등의 과대 표현 금지.
+- 블로그 제목: 보호자 안심 및 검색 유입용 롱테일 키워드 5개.
+- 카드뉴스: 인스타그램 4장 분량 핵심 구상안 3개.
+
+[반드시 순수 JSON 형식으로만 응답할 것]
+{
+  "blogTitles": ["제목1", "제목2", "제목3", "제목4", "제목5"],
+  "cardNews": ["카드뉴스1 요약", "카드뉴스2 요약", "카드뉴스3 요약"]
 }
+        `;
 
-function callGeminiAPI(monthNum, apiKey) {
-  const endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=" + apiKey;
-  const fullPrompt = SYSTEM_PROMPT + "\n\n" + buildUserPrompt(monthNum);
+        try {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${cleanKey}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [{ text: promptText }]
+                }
+              ]
+            })
+          });
 
-  const body = {
-    contents: [
-      { parts: [{ text: fullPrompt }] }
-    ]
-  };
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(`API Error: ${res.status} (${errData.error?.message || "요청 실패"})`);
+          }
 
-  return fetch(endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
-  })
-    .catch(function (networkError) {
-      console.error(networkError);
-      throw new Error("네트워크 요청에 실패했어요. 인터넷 연결 또는 API 키를 확인해주세요.");
-    })
-    .then(function (res) {
-      if (!res.ok) {
-        return res.json().catch(function () { return {}; }).then(function (errJson) {
-          const errDetail = (errJson && errJson.error && errJson.error.message) || "";
-          const error = new Error(("Gemini API 오류 (" + res.status + ") " + errDetail).trim());
-          console.error(error);
-          throw error;
-        });
-      }
-      return res.json();
-    })
-    .then(function (data) {
-      const candidates = data && data.candidates;
-      const rawText = candidates && candidates[0] && candidates[0].content &&
-        candidates[0].content.parts && candidates[0].content.parts[0] &&
-        candidates[0].content.parts[0].text;
+          const data = await res.json();
+          const rawText = data.candidates[0].content.parts[0].text;
+          const cleanedJson = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
+          const parsed = JSON.parse(cleanedJson);
 
-      if (!rawText) {
-        const error = new Error("응답에서 콘텐츠를 찾을 수 없어요.");
-        console.error(error, data);
-        throw error;
-      }
+          setResult(parsed);
+        } catch (err) {
+          console.error(err);
+          setErrorMsg(err.message || "API 호출 실패! Key 입력 및 구글 AI 스튜디오 설정을 확인해 주세요.");
+        } finally {
+          setLoading(false);
+        }
+      };
 
-      const cleaned = rawText.replace(/```json|```/g, "").trim();
-      let parsed;
-      try {
-        parsed = JSON.parse(cleaned);
-      } catch (parseError) {
-        console.error(parseError, rawText);
-        throw new Error("응답 JSON을 해석하지 못했어요.");
-      }
+      const copyToClipboard = (text) => {
+        navigator.clipboard.writeText(text);
+        alert("복사되었습니다!");
+      };
 
-      if (!Array.isArray(parsed.blogTitles) || !Array.isArray(parsed.cardNews)) {
-        const error = new Error("JSON 구조가 예상과 달라요.");
-        console.error(error, parsed);
-        throw error;
-      }
-      return { blogTitles: parsed.blogTitles, cardNews: parsed.cardNews };
-    });
-}
+      const monthInfo = MONTH_DATA[selectedMonth];
 
-/* 폴백용 더미 콘텐츠 (API 키가 없거나 호출 실패 시 사용) */
-function buildDummyContent(monthNum) {
-  const info = MONTH_DB[monthNum];
-  const seasonLabel = SEASONS[info.season].label;
-  const issue1 = info.issues[0];
-  const issue2 = info.issues[1];
-  const disease1 = info.diseases[0];
-  const disease2 = info.diseases[1];
-  const m = MONTH_NAMES[monthNum - 1];
-
-  const blogTitles = [
-    m + ", '" + issue1 + "' 놓치면 안 되는 이유",
-    "우리 아이 '" + disease1 + "', 지금이 골든타임인 이유",
-    seasonLabel + "철 필수 체크리스트 – '" + issue2 + "' 예방하는 법",
-    "보호자님만 몰랐던 " + m + " 반려동물 건강 이슈 TOP 3",
-    "원장님이 직접 알려주는 '" + disease2 + "' 대처법"
-  ];
-
-  const cardNews = [
-    "[카드뉴스] " + m + " 보호자가 꼭 알아야 할 " + issue1 + " — 1p 표지: \"" + m + ", 우리 아이 괜찮을까요?\" · 2p 문제 제기: " + issue1 + " 발생 원인 · 3p 증상 체크리스트 · 4p 병원 내원 타이밍 안내",
-    "[카드뉴스] " + disease1 + " 예방 3단계 — 1p 표지: 숫자로 보는 " + disease1 + " · 2p 원인/위험 요인 · 3p 가정에서 할 수 있는 예방 3단계 · 4p 병원 검진 항목 소개",
-    "[카드뉴스] " + seasonLabel + "철 산책·나들이 안전수칙 — 1p 표지: " + seasonLabel + "철 나들이 전 체크! · 2p 이동 중 주의사항 · 3p " + issue2 + " 대응법 · 4p 응급 상황 대처 순서"
-  ];
-
-  return { blogTitles: blogTitles, cardNews: cardNews };
-}
-
-/* ------------------------------------------------------------------ */
-/* 3. 복사 버튼 컴포넌트                                                */
-/* ------------------------------------------------------------------ */
-function CopyButton(props) {
-  const text = props.text;
-  const id = props.id;
-  const copiedId = props.copiedId;
-  const setCopiedId = props.setCopiedId;
-  const copied = copiedId === id;
-
-  const handleCopy = function () {
-    navigator.clipboard.writeText(text).then(function () {
-      setCopiedId(id);
-      setTimeout(function () {
-        setCopiedId(function (cur) { return cur === id ? null : cur; });
-      }, 1500);
-    }).catch(function (e) {
-      console.error(e);
-    });
-  };
-
-  return (
-    <button
-      onClick={handleCopy}
-      className="shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 text-slate-400 hover:text-[#2F8577] hover:border-[#2F8577] hover:bg-[#EAF4F2] transition-colors text-sm"
-      aria-label="복사"
-      title="복사"
-    >
-      {copied ? "✅" : "📋"}
-    </button>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* 4. 메인 앱                                                          */
-/* ------------------------------------------------------------------ */
-function App() {
-  const currentMonth = new Date().getMonth() + 1;
-  const [selectedMonth, setSelectedMonth] = React.useState(currentMonth);
-  const [apiKey, setApiKey] = React.useState("");
-  const [loading, setLoading] = React.useState(false);
-  const [result, setResult] = React.useState(null);
-  const [copiedId, setCopiedId] = React.useState(null);
-  const [error, setError] = React.useState(null);
-
-  React.useEffect(function () {
-    setResult(null);
-  }, [selectedMonth]);
-
-  const info = MONTH_DB[selectedMonth];
-  const season = SEASONS[info.season];
-
-  const handleGenerate = function () {
-    setLoading(true);
-    setResult(null);
-    setError(null);
-
-    const key = apiKey.trim();
-
-    if (!key) {
-      setTimeout(function () {
-        setResult(buildDummyContent(selectedMonth));
-        setError("Gemini API 키가 입력되지 않아 예시 콘텐츠를 보여드리고 있어요.");
-        setLoading(false);
-      }, 900);
-      return;
-    }
-
-    callGeminiAPI(selectedMonth, key)
-      .then(function (data) {
-        setResult(data);
-      })
-      .catch(function (e) {
-        console.error(e);
-        setError("API 호출에 실패해 예시 콘텐츠로 대신 보여드려요. (" + e.message + ")");
-        setResult(buildDummyContent(selectedMonth));
-      })
-      .finally(function () {
-        setLoading(false);
-      });
-  };
-
-  return (
-    <div className="min-h-screen w-full" style={{ background: "#F5F7F6" }}>
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-
-        <header className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 mb-8">
-          <div className="flex items-start gap-3">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 text-2xl" style={{ background: "#1B2A38" }}>
-              📅
-            </div>
+      return (
+        <div className="max-w-4xl mx-auto p-4 md:p-8">
+          {/* Header */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
             <div>
-              <h1 className="text-2xl sm:text-[26px] font-bold tracking-tight font-display" style={{ color: "#1B2A38" }}>
-                동물병원 시즌별 콘텐츠 달력 빌더
+              <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                📅 동물병원 시즌별 콘텐츠 달력 빌더
               </h1>
-              <p className="text-sm text-slate-500 mt-1 leading-relaxed">
-                월별 시즌 이슈에 맞춰 네이버 블로그 제목과 인스타그램 카드뉴스 기획을 자동으로 추천받으세요.
-              </p>
+              <p className="text-slate-500 text-sm mt-1">월별 수의학 이슈에 맞는 블로그 및 인스타 기획안을 AI로 즉시 생성합니다.</p>
+            </div>
+            <div className="w-full md:w-72">
+              <label className="block text-xs font-semibold text-slate-500 mb-1">🔑 Gemini API Key</label>
+              <input
+                type="password"
+                placeholder="AIzaSy..."
+                value={apiKey}
+                onChange={handleSaveKey}
+                className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
             </div>
           </div>
 
-          <div className="w-full lg:w-72 shrink-0">
-            <label className="flex items-center gap-1.5 text-xs font-medium text-slate-500 mb-1.5">
-              <span>🔑</span> Gemini API Key
-            </label>
-            <input
-              type="password"
-              value={apiKey}
-              onChange={function (e) { setApiKey(e.target.value); }}
-              placeholder="API 키를 입력하세요"
-              className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-700 placeholder:text-slate-300 outline-none focus:ring-2 focus:ring-[#2F8577]/30 focus:border-[#2F8577] transition-shadow"
-            />
-            <p className="text-[11px] text-slate-400 mt-1.5">이 화면 세션 동안만 사용되며 외부로 전송되지 않아요.</p>
-          </div>
-        </header>
-
-        <nav aria-label="월 선택" className="mb-6">
-          <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 sm:gap-2.5">
-            {MONTH_NAMES.map(function (label, idx) {
-              const m = idx + 1;
-              const s = SEASONS[MONTH_DB[m].season];
-              const isSelected = m === selectedMonth;
+          {/* Month Selector */}
+          <div className="grid grid-cols-4 md:grid-cols-6 gap-2 mb-6">
+            {Object.keys(MONTH_DATA).map((m) => {
+              const num = Number(m);
+              const isSelected = num === selectedMonth;
               return (
                 <button
-                  key={m}
-                  onClick={function () { setSelectedMonth(m); }}
-                  className="relative rounded-xl py-3 flex flex-col items-center justify-center gap-0.5 transition-all border"
-                  style={{ background: isSelected ? s.color : "#fff", borderColor: isSelected ? s.color : "#E7EAE9" }}
+                  key={num}
+                  onClick={() => { setSelectedMonth(num); setResult(null); }}
+                  className={`p-3 rounded-xl border text-center transition-all ${
+                    isSelected
+                      ? "bg-orange-500 text-white border-orange-500 font-bold shadow-md scale-105"
+                      : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                  }`}
                 >
-                  <span className="text-lg font-semibold leading-none font-display" style={{ color: isSelected ? "#fff" : "#1B2A38" }}>
-                    {m}
-                  </span>
-                  <span className="text-[10px] leading-none mt-1" style={{ color: isSelected ? "rgba(255,255,255,0.85)" : "#9AA5A2" }}>
-                    {s.label}
-                  </span>
+                  <div className="text-lg">{num}월</div>
+                  <div className={`text-xs ${isSelected ? "text-orange-100" : "text-slate-400"}`}>
+                    {MONTH_DATA[num].season}
+                  </div>
                 </button>
               );
             })}
           </div>
-        </nav>
 
-        <div className="rounded-2xl border p-5 sm:p-6 mb-6" style={{ background: season.soft, borderColor: season.color + "33" }}>
-          <div className="flex items-center gap-2.5 mb-4">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg" style={{ background: season.color }}>
-              {season.emoji}
-            </div>
-            <div>
-              <p className="text-[13px] font-medium" style={{ color: season.color }}>
-                {season.label} · {MONTH_NAMES[selectedMonth - 1]} 시즌 브리핑
-              </p>
-              <p className="text-[13px] text-slate-500">{info.note}</p>
+          {/* Month Info Card */}
+          <div className="bg-orange-50 border border-orange-200 rounded-2xl p-6 mb-8">
+            <h2 className="text-lg font-bold text-orange-900 mb-2 flex items-center gap-2">
+              ☀️ {selectedMonth}월 시즌 브리핑: {monthInfo.title}
+            </h2>
+            <div className="flex flex-wrap gap-2 mt-3">
+              {monthInfo.issues.map((issue, idx) => (
+                <span key={idx} className="bg-white text-orange-800 text-xs font-medium px-3 py-1.5 rounded-full border border-orange-200 shadow-sm">
+                  #{issue}
+                </span>
+              ))}
             </div>
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div>
-              <p className="text-xs font-semibold text-slate-500 mb-2">▸ 주요 시즌 이슈</p>
-              <div className="flex flex-wrap gap-1.5">
-                {info.issues.map(function (it) {
-                  return (
-                    <span key={it} className="text-xs px-2.5 py-1 rounded-full bg-white border" style={{ borderColor: season.color + "44", color: "#1B2A38" }}>
-                      {it}
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-slate-500 mb-2">🩺 주의 질환</p>
-              <div className="flex flex-wrap gap-1.5">
-                {info.diseases.map(function (d) {
-                  return (
-                    <span key={d} className="text-xs px-2.5 py-1 rounded-full text-white" style={{ background: "#1B2A38" }}>
-                      {d}
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex justify-center mb-4">
+          {/* Submit Button */}
           <button
-            onClick={handleGenerate}
+            onClick={generateContent}
             disabled={loading}
-            className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl text-white font-semibold text-sm text-center shadow-sm hover:shadow-md active:scale-[0.98] transition-all disabled:opacity-80 max-w-full"
-            style={{ background: "#E8632C" }}
+            className="w-full py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-2xl shadow-lg hover:opacity-95 transition-all disabled:opacity-50 text-lg flex items-center justify-center gap-2 mb-8"
           >
-            <span>{loading ? "⏳" : "✨"}</span>
-            <span className="truncate">
-              {loading ? "해당 월의 수의학 이슈를 분석하여 콘텐츠를 기획 중입니다..." : (MONTH_NAMES[selectedMonth - 1] + " 맞춤 콘텐츠 추천받기")}
-            </span>
+            {loading ? "🔄 해당 월의 이슈를 분석하여 기획안을 생성 중..." : `✨ ${selectedMonth}월 맞춤 콘텐츠 추천받기`}
           </button>
+
+          {errorMsg && (
+            <div className="p-4 bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl mb-6">
+              ⚠️ {errorMsg}
+            </div>
+          )}
+
+          {/* Results */}
+          {result && (
+            <div className="space-y-6">
+              {/* Blog Titles */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                  📝 네이버 블로그 추천 제목 (5개)
+                </h3>
+                <div className="space-y-2">
+                  {result.blogTitles?.map((title, i) => (
+                    <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
+                      <span className="text-sm text-slate-700 font-medium">{i + 1}. {title}</span>
+                      <button
+                        onClick={() => copyToClipboard(title)}
+                        className="px-3 py-1 text-xs bg-white border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 font-semibold"
+                      >
+                        📋 복사
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Instagram Card News */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                  📸 인스타그램 카드뉴스 기획 (3개)
+                </h3>
+                <div className="space-y-3">
+                  {result.cardNews?.map((card, i) => (
+                    <div key={i} className="flex items-start justify-between p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors gap-4">
+                      <p className="text-sm text-slate-700 leading-relaxed font-medium">{i + 1}. {card}</p>
+                      <button
+                        onClick={() => copyToClipboard(card)}
+                        className="shrink-0 px-3 py-1 text-xs bg-white border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 font-semibold"
+                      >
+                        📋 복사
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
+      );
+    }
 
-        {error && (
-          <div className="flex items-start gap-2 text-[12.5px] text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-2.5 mb-6 max-w-2xl mx-auto">
-            <span>⚠️</span>
-            <span>{error}</span>
-          </div>
-        )}
-
-        {result && (
-          <div className="grid lg:grid-cols-2 gap-5 pb-10">
-            <div className="bg-white rounded-2xl border border-slate-200 p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <span>📝</span>
-                <h2 className="text-sm font-bold text-[#1B2A38]">네이버 블로그 제목 추천 5개</h2>
-              </div>
-              <ul className="flex flex-col gap-2.5">
-                {result.blogTitles.map(function (title, i) {
-                  return (
-                    <li key={i} className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50/60 px-3.5 py-2.5">
-                      <span className="text-[13px] leading-snug text-slate-700">{title}</span>
-                      <CopyButton text={title} id={"blog-" + i} copiedId={copiedId} setCopiedId={setCopiedId} />
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-slate-200 p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <span>📸</span>
-                <h2 className="text-sm font-bold text-[#1B2A38]">인스타그램 카드뉴스 기획 3개</h2>
-              </div>
-              <ul className="flex flex-col gap-2.5">
-                {result.cardNews.map(function (card, i) {
-                  return (
-                    <li key={i} className="rounded-xl border border-slate-100 bg-slate-50/60 px-3.5 py-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#E8632C" }}>기획안 {i + 1}</p>
-                        <CopyButton text={card} id={"ig-" + i} copiedId={copiedId} setCopiedId={setCopiedId} />
-                      </div>
-                      <p className="text-[12.5px] text-slate-600 mt-1.5 leading-relaxed whitespace-pre-line">{card}</p>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </div>
-        )}
-
-        {!result && !loading && (
-          <div className="flex flex-col items-center text-center text-slate-400 py-10">
-            <div className="text-3xl mb-2 opacity-70">🐾</div>
-            <p className="text-sm">버튼을 누르면 이 달의 콘텐츠 기획이 여기에 표시돼요.</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(<App />);
-</script>
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
 </body>
 </html>

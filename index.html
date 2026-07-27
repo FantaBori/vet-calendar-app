@@ -44,7 +44,8 @@
       };
 
       const generateContent = async () => {
-        if (!apiKey) {
+        const cleanKey = apiKey.trim();
+        if (!cleanKey) {
           alert("우측 상단에 Gemini API Key를 입력해주세요!");
           return;
         }
@@ -62,7 +63,7 @@ ${selectedMonth}월(${monthInfo.title})의 주요 이슈 [${monthInfo.issues.joi
 - 블로그 제목: 보호자 안심 및 검색 유입용 롱테일 키워드 5개.
 - 카드뉴스: 인스타그램 4장 분량 핵심 구상안 3개.
 
-[반드시 아래 JSON 형태로만 응답할 것]
+[반드시 순수 JSON 형식으로만 응답할 것]
 {
   "blogTitles": ["제목1", "제목2", "제목3", "제목4", "제목5"],
   "cardNews": ["카드뉴스1 요약", "카드뉴스2 요약", "카드뉴스3 요약"]
@@ -70,15 +71,22 @@ ${selectedMonth}월(${monthInfo.title})의 주요 이슈 [${monthInfo.issues.joi
         `;
 
         try {
-          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey.trim()}`, {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${cleanKey}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              contents: [{ parts: [{ text: promptText }] }]
+              contents: [
+                {
+                  parts: [{ text: promptText }]
+                }
+              ]
             })
           });
 
-          if (!res.ok) throw new Error(`API Error: ${res.status}`);
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(`API Error: ${res.status} (${errData.error?.message || "요청 실패"})`);
+          }
 
           const data = await res.json();
           const rawText = data.candidates[0].content.parts[0].text;
@@ -88,7 +96,7 @@ ${selectedMonth}월(${monthInfo.title})의 주요 이슈 [${monthInfo.issues.joi
           setResult(parsed);
         } catch (err) {
           console.error(err);
-          setErrorMsg("API 호출에 실패했거나 올바르지 않은 Key입니다. Key 및 네트워크를 확인해주세요.");
+          setErrorMsg(err.message || "API 호출 실패! Key 입력 및 구글 AI 스튜디오 설정을 확인해 주세요.");
         } finally {
           setLoading(false);
         }

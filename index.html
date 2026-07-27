@@ -62,6 +62,7 @@ ${selectedMonth}월(${monthInfo.title})의 주요 이슈 [${monthInfo.issues.joi
 - 수의사법 제32조를 준수해 100% 완치, 지역 1위 등의 과대 표현 금지.
 - 블로그 제목: 보호자 안심 및 검색 유입용 롱테일 키워드 5개.
 - 카드뉴스: 인스타그램 4장 분량 핵심 구상안 3개.
+- 진부하거나 똑같은 문구를 반복하지 말고, 보호자의 공감을 이끌어낼 수 있는 다양하고 참신한 앵글로 작성할 것.
 
 [반드시 순수 JSON 형식으로만 응답할 것]
 {
@@ -79,7 +80,10 @@ ${selectedMonth}월(${monthInfo.title})의 주요 이슈 [${monthInfo.issues.joi
                 {
                   parts: [{ text: promptText }]
                 }
-              ]
+              ],
+              generationConfig: {
+                temperature: 0.95 // 다채롭고 새로운 결과를 나오게 하는 다양성 옵션
+              }
             })
           });
 
@@ -175,7 +179,7 @@ ${selectedMonth}월(${monthInfo.title})의 주요 이슈 [${monthInfo.issues.joi
             disabled={loading}
             className="w-full py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-2xl shadow-lg hover:opacity-95 transition-all disabled:opacity-50 text-lg flex items-center justify-center gap-2 mb-8"
           >
-            {loading ? "🔄 해당 월의 이슈를 분석하여 기획안을 생성 중..." : `✨ ${selectedMonth}월 맞춤 콘텐츠 추천받기`}
+            {loading ? "🔄 새로운 각도로 콘텐츠 기획안을 생성 중..." : `✨ ${selectedMonth}월 맞춤 콘텐츠 추천받기`}
           </button>
 
           {errorMsg && (

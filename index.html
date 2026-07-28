@@ -3,11 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>동물병원 시즌별 콘텐츠 달력 빌더</title>
+  <title>동물병원 무한 콘텐츠 달력 빌더</title>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes bounce-subtle {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+    .animate-bounce-subtle {
+      animation: bounce-subtle 1.5s infinite ease-in-out;
+    }
+  </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
   <div id="root"></div>
@@ -29,6 +38,23 @@
       11: { season: "가을", title: "초겨울 관절 통증 & 건조증", issues: ["기온 저하 노령견 관절 통증", "실내 난방 피부 건조", "예방접종 재접종 시즌"] },
       12: { season: "겨울", title: "연말 주의사항 & 한파 대비", issues: ["연말 파티 음식 음복", "산책 로드쇼 염화칼슘 발바닥 상처", "겨울철 유선종양/검진"] }
     };
+
+    const ANGLES = [
+      "보호자가 흔히 하는 응급 착각/오해 바로잡기",
+      "실제 병원 내원 사례 기반의 경각심 심어주기",
+      "집에서 1분 만에 끝내는 홈케어/체크리스트",
+      "초보 보호자를 위한 상황별 행동 요령 및 가이드라인",
+      "비용과 고통을 90% 줄여주는 사전 예방 꿀팁",
+      "특정 품종이나 세부 수의학 질환 깊이 파헤치기"
+    ];
+
+    const TARGETS = [
+      "7세 이상 노령견/노령묘 보호자",
+      "초보 댕냥이 집사 (1년 차 미만)",
+      "야외 산책 및 활동성이 높은 활발한 아이의 보호자",
+      "피부나 장이 민감해 병원을 자주 찾는 보호자",
+      "다견/다묘가정 및 자율배식 보호자"
+    ];
 
     function App() {
       const [apiKey, setApiKey] = useState(() => localStorage.getItem("gemini_key") || "");
@@ -54,20 +80,50 @@
         setErrorMsg("");
         const monthInfo = MONTH_DATA[selectedMonth];
 
-        const promptText = `
-너는 동물병원 마케팅 전문가야. 
-${selectedMonth}월(${monthInfo.title})의 주요 이슈 [${monthInfo.issues.join(", ")}]를 바탕으로 마케팅 콘텐츠를 추천해줘.
+        const randomAngle = ANGLES[Math.floor(Math.random() * ANGLES.length)];
+        const randomTarget = TARGETS[Math.floor(Math.random() * TARGETS.length)];
+        const randomSeed = Date.now();
 
-[작성 규칙]
-- 수의사법 제32조를 준수해 100% 완치, 지역 1위 등의 과대 표현 금지.
-- 블로그 제목: 보호자 안심 및 검색 유입용 롱테일 키워드 5개.
-- 카드뉴스: 인스타그램 4장 분량 핵심 구상안 3개.
-- 진부하거나 똑같은 문구를 반복하지 말고, 보호자의 공감을 이끌어낼 수 있는 다양하고 참신한 앵글로 작성할 것.
+        const promptText = `
+너는 대한민국 최신 트렌드를 잘 아는 동물병원 전문 SNS 마케터야.
+
+[기본 참고 정보]
+- 해당 월: ${selectedMonth}월 (${monthInfo.season})
+- 대표 키워드 예시: ${monthInfo.issues.join(", ")}
+
+[핵심 요구사항]
+위 대표 키워드는 기초 참고용일 뿐이야. 네가 알고 있는 전체 수의학 지식, 최신 반려인 트렌드, 대한민국 ${selectedMonth}월의 절기/날씨 특성을 총동원해서 **위 대표 키워드 목록에 적히지 않은 완전히 새로운 최신 수의학 이슈나 세부 질환**을 발굴해서 추천해줘.
+
+[이번 생성 무작위 조건]
+- 타깃층: ${randomTarget}
+- 접근 앵글: ${randomAngle}
+- 생성 씨드: ${randomSeed} (매번 기존과 완전히 차별화된 아이디어 제공)
+
+[작성 요구사항]
+1. 콘텐츠 주제: 보호자의 눈길을 끌 수 있는 독창적이고 획기적인 주제 3가지.
+2. 카드뉴스 제작 가이드: 인스타그램 슬라이드별 핵심 구성안(표지-본문-결론/CTA).
+3. AI 작성용 프롬프트: ChatGPT나 AI 툴에 붙여넣어 완벽한 인스타 원고를 써내려갈 실행용 프롬프트.
+- 수의사법 제32조 준수 (과대/과장 표현 엄격 금지).
 
 [반드시 순수 JSON 형식으로만 응답할 것]
 {
-  "blogTitles": ["제목1", "제목2", "제목3", "제목4", "제목5"],
-  "cardNews": ["카드뉴스1 요약", "카드뉴스2 요약", "카드뉴스3 요약"]
+  "items": [
+    {
+      "topic": "콘텐츠 주제 1",
+      "guide": "인스타 카드뉴스 슬라이드별 구성 가이드",
+      "aiPrompt": "ChatGPT나 AI 툴에 붙여넣어 카드뉴스 상세 원고를 작성하게 할 실행용 프롬프트"
+    },
+    {
+      "topic": "콘텐츠 주제 2",
+      "guide": "인스타 카드뉴스 슬라이드별 구성 가이드",
+      "aiPrompt": "ChatGPT나 AI 툴에 붙여넣어 카드뉴스 상세 원고를 작성하게 할 실행용 프롬프트"
+    },
+    {
+      "topic": "콘텐츠 주제 3",
+      "guide": "인스타 카드뉴스 슬라이드별 구성 가이드",
+      "aiPrompt": "ChatGPT나 AI 툴에 붙여넣어 카드뉴스 상세 원고를 작성하게 할 실행용 프롬프트"
+    }
+  ]
 }
         `;
 
@@ -76,13 +132,9 @@ ${selectedMonth}월(${monthInfo.title})의 주요 이슈 [${monthInfo.issues.joi
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              contents: [
-                {
-                  parts: [{ text: promptText }]
-                }
-              ],
+              contents: [{ parts: [{ text: promptText }] }],
               generationConfig: {
-                temperature: 0.95 // 다채롭고 새로운 결과를 나오게 하는 다양성 옵션
+                temperature: 0.98
               }
             })
           });
@@ -100,7 +152,7 @@ ${selectedMonth}월(${monthInfo.title})의 주요 이슈 [${monthInfo.issues.joi
           setResult(parsed);
         } catch (err) {
           console.error(err);
-          setErrorMsg(err.message || "API 호출 실패! Key 입력 및 구글 AI 스튜디오 설정을 확인해 주세요.");
+          setErrorMsg(err.message || "API 호출 실패! Key 입력 및 설정을 확인해 주세요.");
         } finally {
           setLoading(false);
         }
@@ -108,7 +160,7 @@ ${selectedMonth}월(${monthInfo.title})의 주요 이슈 [${monthInfo.issues.joi
 
       const copyToClipboard = (text) => {
         navigator.clipboard.writeText(text);
-        alert("복사되었습니다!");
+        alert("프롬프트가 복사되었습니다! ChatGPT나 AI 툴에 붙여넣어 원고를 생성하세요.");
       };
 
       const monthInfo = MONTH_DATA[selectedMonth];
@@ -119,9 +171,9 @@ ${selectedMonth}월(${monthInfo.title})의 주요 이슈 [${monthInfo.issues.joi
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
             <div>
               <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                📅 동물병원 시즌별 콘텐츠 달력 빌더
+                🎲 동물병원 무한 AI 콘텐츠 빌더
               </h1>
-              <p className="text-slate-500 text-sm mt-1">월별 수의학 이슈에 맞는 블로그 및 인스타 기획안을 AI로 즉시 생성합니다.</p>
+              <p className="text-slate-500 text-sm mt-1">지정된 키워드에 갇히지 않고, AI 수의학 데이터베이스에서 매번 새로운 주제를 발굴합니다.</p>
             </div>
             <div className="w-full md:w-72">
               <label className="block text-xs font-semibold text-slate-500 mb-1">🔑 Gemini API Key</label>
@@ -162,9 +214,10 @@ ${selectedMonth}월(${monthInfo.title})의 주요 이슈 [${monthInfo.issues.joi
           {/* Month Info Card */}
           <div className="bg-orange-50 border border-orange-200 rounded-2xl p-6 mb-8">
             <h2 className="text-lg font-bold text-orange-900 mb-2 flex items-center gap-2">
-              ☀️ {selectedMonth}월 시즌 브리핑: {monthInfo.title}
+              ☀️ {selectedMonth}월 기본 테마: {monthInfo.title}
             </h2>
-            <div className="flex flex-wrap gap-2 mt-3">
+            <p className="text-xs text-orange-700 mb-3">기본 키워드 외에도 AI가 다양한 수의학 지식을 결합하여 매번 새로운 주제를 생성합니다.</p>
+            <div className="flex flex-wrap gap-2">
               {monthInfo.issues.map((issue, idx) => (
                 <span key={idx} className="bg-white text-orange-800 text-xs font-medium px-3 py-1.5 rounded-full border border-orange-200 shadow-sm">
                   #{issue}
@@ -173,14 +226,39 @@ ${selectedMonth}월(${monthInfo.title})의 주요 이슈 [${monthInfo.issues.joi
             </div>
           </div>
 
-          {/* Submit Button */}
+          {/* Submit Button with Dynamic Motion */}
           <button
             onClick={generateContent}
             disabled={loading}
-            className="w-full py-4 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold rounded-2xl shadow-lg hover:opacity-95 transition-all disabled:opacity-50 text-lg flex items-center justify-center gap-2 mb-8"
+            className={`w-full py-4 font-bold rounded-2xl shadow-lg transition-all text-lg flex items-center justify-center gap-3 mb-8 ${
+              loading
+                ? "bg-slate-700 text-white cursor-not-allowed animate-pulse"
+                : "bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:opacity-95 active:scale-[0.99]"
+            }`}
           >
-            {loading ? "🔄 새로운 각도로 콘텐츠 기획안을 생성 중..." : `✨ ${selectedMonth}월 맞춤 콘텐츠 추천받기`}
+            {loading ? (
+              <>
+                <svg className="animate-spin h-6 w-6 text-orange-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>AI가 새로운 수의학 앵글을 구성하는 중...</span>
+              </>
+            ) : (
+              <span>🎲 {selectedMonth}월 새로운 무작위 주제 발굴하기</span>
+            )}
           </button>
+
+          {/* Loading Visual Indicator Card */}
+          {loading && (
+            <div className="bg-white p-8 rounded-2xl border border-orange-200 shadow-md text-center mb-8 animate-bounce-subtle">
+              <div className="inline-block p-4 bg-orange-100 rounded-full text-2xl mb-3">
+                🧠
+              </div>
+              <h3 className="text-lg font-bold text-slate-800 mb-1">수의학 전문 데이터 검색 및 앵글 조합 중...</h3>
+              <p className="text-xs text-slate-500">잠시만 기다려주시면 참신한 주제와 인스타 카드뉴스 프롬프트가 도출됩니다.</p>
+            </div>
+          )}
 
           {errorMsg && (
             <div className="p-4 bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl mb-6">
@@ -189,47 +267,51 @@ ${selectedMonth}월(${monthInfo.title})의 주요 이슈 [${monthInfo.issues.joi
           )}
 
           {/* Results */}
-          {result && (
+          {!loading && result && result.items && (
             <div className="space-y-6">
-              {/* Blog Titles */}
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                  📝 네이버 블로그 추천 제목 (5개)
-                </h3>
-                <div className="space-y-2">
-                  {result.blogTitles?.map((title, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
-                      <span className="text-sm text-slate-700 font-medium">{i + 1}. {title}</span>
-                      <button
-                        onClick={() => copyToClipboard(title)}
-                        className="px-3 py-1 text-xs bg-white border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 font-semibold"
-                      >
-                        📋 복사
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                💡 {selectedMonth}월 추천 콘텐츠 주제 & 인스타 가이드
+              </h2>
 
-              {/* Instagram Card News */}
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                  📸 인스타그램 카드뉴스 기획 (3개)
-                </h3>
-                <div className="space-y-3">
-                  {result.cardNews?.map((card, i) => (
-                    <div key={i} className="flex items-start justify-between p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors gap-4">
-                      <p className="text-sm text-slate-700 leading-relaxed font-medium">{i + 1}. {card}</p>
+              {result.items.map((item, idx) => (
+                <div key={idx} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4 hover:border-orange-200 transition-colors">
+                  {/* 1. 콘텐츠 주제 (최상단) */}
+                  <div className="border-b border-slate-100 pb-3">
+                    <span className="text-xs font-bold text-orange-500 uppercase tracking-wider">Topic 0{idx + 1}</span>
+                    <h3 className="text-xl font-bold text-slate-900 mt-1">
+                      📌 {item.topic}
+                    </h3>
+                  </div>
+
+                  {/* 2. 인스타 카드뉴스 구성 가이드 */}
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <h4 className="text-sm font-bold text-slate-700 mb-2 flex items-center gap-1">
+                      📸 인스타그램 카드뉴스 구성 가이드
+                    </h4>
+                    <p className="text-sm text-slate-600 whitespace-pre-line leading-relaxed">
+                      {item.guide}
+                    </p>
+                  </div>
+
+                  {/* 3. AI 작성용 프롬프트 */}
+                  <div className="bg-orange-50/50 p-4 rounded-xl border border-orange-100">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-bold text-orange-900 flex items-center gap-1">
+                        🤖 원고 작성용 AI 프롬프트
+                      </h4>
                       <button
-                        onClick={() => copyToClipboard(card)}
-                        className="shrink-0 px-3 py-1 text-xs bg-white border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 font-semibold"
+                        onClick={() => copyToClipboard(item.aiPrompt)}
+                        className="px-3 py-1 text-xs bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-semibold transition-colors shadow-sm"
                       >
-                        📋 복사
+                        📋 프롬프트 복사
                       </button>
                     </div>
-                  ))}
+                    <p className="text-xs text-slate-700 bg-white p-3 rounded-lg border border-orange-200/60 font-mono leading-relaxed">
+                      {item.aiPrompt}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              ))}
             </div>
           )}
         </div>
